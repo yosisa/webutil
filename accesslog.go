@@ -54,17 +54,24 @@ func Logger(h http.Handler, logger LogWriter) http.Handler {
 	})
 }
 
-func ConsoleLogWriter(w io.Writer) LogWriter {
-	return &consoleLogWriter{w: w}
+func NewConsoleLogWriter(w io.Writer) *ConsoleLogWriter {
+	return &ConsoleLogWriter{w: w}
 }
 
-type consoleLogWriter struct {
+type ConsoleLogWriter struct {
 	w io.Writer
-	sync.Mutex
+	m sync.Mutex
 }
 
-func (w *consoleLogWriter) WriteLog(l *AccessLog) {
-	w.Lock()
-	defer w.Unlock()
+func (w *ConsoleLogWriter) WriteLog(l *AccessLog) {
+	w.m.Lock()
+	defer w.m.Unlock()
 	fmt.Fprintln(w.w, l)
+}
+
+func (w *ConsoleLogWriter) Swap(new io.Writer) (old io.Writer) {
+	w.m.Lock()
+	defer w.m.Unlock()
+	old, w.w = w.w, new
+	return
 }
